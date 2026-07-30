@@ -1,13 +1,26 @@
 # manual-scrobble
 Manually Scrobble a Plex album to multi-scrobbler
 
-# Download (Windows)
+# Download
 
-Grab the latest `.exe` from the [Releases page](https://github.com/jspeyside/manual-scrobble/releases) —
-no Python install required. It's unsigned, so Windows SmartScreen will show an
-"unknown publisher" warning the first time you run it; click "More info" then
-"Run anyway". It still reads `PLEX_URL`/`PLEX_TOKEN`/`MS_URL`/`MS_TOKEN` from
-the environment or a `.env` file placed next to the `.exe` — see below.
+Grab the latest build from the [Releases page](https://github.com/jspeyside/manual-scrobble/releases) —
+no Python install required. Both read `PLEX_URL`/`PLEX_TOKEN`/`MS_URL`/`MS_TOKEN`
+from the environment or a `.env` file placed next to the binary — see below.
+
+**Windows** (`manual-scrobble-vX.Y.Z-windows.exe`) — opens a native window.
+It's unsigned, so SmartScreen will show an "unknown publisher" warning the
+first time you run it; click "More info" then "Run anyway".
+
+**Linux** (`manual-scrobble-vX.Y.Z-linux`) — opens in your default browser
+instead of a native window (it doesn't bundle Qt, so there's no windowing
+toolkit available; see [gui.py](gui.py)'s native-mode comment for why). Mark
+it executable after downloading — GitHub Releases don't reliably preserve
+that bit:
+
+```
+chmod +x manual-scrobble-vX.Y.Z-linux
+./manual-scrobble-vX.Y.Z-linux
+```
 
 # Directions
 How it works and the two things you need:

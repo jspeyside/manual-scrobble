@@ -8,8 +8,17 @@ permissions:
   contents: write
 
 jobs:
-  build-windows-exe:
-    runs-on: windows-latest
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            build_output: dist/manual-scrobble.exe
+            asset_name: manual-scrobble-${{ github.ref_name }}-windows.exe
+          - os: ubuntu-latest
+            build_output: dist/manual-scrobble
+            asset_name: manual-scrobble-${{ github.ref_name }}-linux
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
@@ -21,16 +30,17 @@ jobs:
 
       - run: pipenv install --dev --deploy
 
-      - name: Build the exe
+      - name: Build
         run: pipenv run pyinstaller --noconfirm manual-scrobble.spec
 
       - name: Rename with version
-        run: Rename-Item "dist/manual-scrobble.exe" "manual-scrobble-${{ github.ref_name }}-windows.exe"
+        shell: bash
+        run: mv "${{ matrix.build_output }}" "dist/${{ matrix.asset_name }}"
 
-      - name: Smoke test the built exe
+      - name: Smoke test (Windows)
+        if: matrix.os == 'windows-latest'
         run: |
-          $exe = Get-ChildItem dist -Filter "manual-scrobble-*.exe" | Select-Object -First 1
-          $proc = Start-Process -FilePath $exe.FullName -PassThru `
+          $proc = Start-Process -FilePath "dist/${{ matrix.asset_name }}" -PassThru `
             -RedirectStandardOutput "$env:RUNNER_TEMP\smoke_stdout.log" `
             -RedirectStandardError "$env:RUNNER_TEMP\smoke_stderr.log"
           Start-Sleep -Seconds 8
@@ -42,7 +52,43 @@ jobs:
           Stop-Process -Id $proc.Id -Force
           Write-Host "exe launched and stayed alive for 8s - OK"
 
+      - name: Smoke test (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          chmod +x "dist/${{ matrix.asset_name }}"
+          "./dist/${{ matrix.asset_name }}" > /tmp/smoke.log 2>&1 &
+          pid=$!
+          ok=0
+          for i in $(seq 1 10); do
+            if curl -sf http://localhost:8080/ > /dev/null; then
+              ok=1
+              break
+            fi
+            sleep 1
+          done
+          if [ "$ok" -ne 1 ]; then
+            echo "::error::binary did not serve on :8080 within 10s"
+            cat /tmp/smoke.log
+            exit 1
+          fi
+          kill $pid
+          echo "binary served the page - OK"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset_name }}
+          path: dist/${{ matrix.asset_name }}
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/manual-scrobble-*.exe
+          files: dist/*

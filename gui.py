@@ -12,6 +12,7 @@ environment or a .env file), prefilled into an editable connection panel.
 
 import argparse
 import os
+import sys
 from datetime import datetime
 
 import requests
@@ -206,6 +207,12 @@ def index():
 
 def main():
     ap = argparse.ArgumentParser(description="GUI for scrobbling a Plex album to multi-scrobbler.")
+    # The frozen Linux binary excludes Qt/PySide6 (see manual-scrobble.spec) to
+    # stay small, so it has no native webview backend available. Default to
+    # browser mode there; every other case (from source, or the frozen Windows
+    # exe, which uses the system WebView2 runtime) still defaults to native.
+    default_native = not (getattr(sys, "frozen", False) and sys.platform.startswith("linux"))
+    ap.add_argument("--native", dest="native", action="store_true", default=default_native)
     ap.add_argument("--no-native", dest="native", action="store_false", help="Open in a browser tab instead of a native window")
     args, _ = ap.parse_known_args()
 
