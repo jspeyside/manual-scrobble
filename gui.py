@@ -15,7 +15,7 @@ import os
 from datetime import datetime
 
 import requests
-from nicegui import run, ui
+from nicegui import native, run, ui
 
 from scrobble import build_listens, fetch_album, rating_key_from_arg, submit
 
@@ -209,7 +209,13 @@ def main():
     ap.add_argument("--no-native", dest="native", action="store_false", help="Open in a browser tab instead of a native window")
     args, _ = ap.parse_known_args()
 
-    ui.run(native=args.native, title="Manual Scrobble", reload=False, window_size=(900, 850) if args.native else None)
+    ui.run(
+        native=args.native,
+        title="Manual Scrobble",
+        reload=False,
+        port=native.find_open_port() if args.native else 8080,
+        window_size=(900, 850) if args.native else None,
+    )
 
 
 if __name__ in {"__main__", "__mp_main__"}:

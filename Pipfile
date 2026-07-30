@@ -8,8 +8,24 @@ requests = "*"
 python-dotenv = "*"
 nicegui = "*"
 pywebview = "*"
+# qtpy/pyside6: pywebview's Linux fallback backend when the system GTK
+# webkit2gtk lib is missing (as on this dev box). Windows doesn't need them at
+# all (it uses the system WebView2 runtime), so the release build excludes
+# them from the frozen exe via PyInstaller's --exclude-module. They're kept
+# unconditioned here (not sys_platform-restricted) because marking them
+# Linux-only previously corrupted pipenv's marker resolution for `packaging`,
+# a dependency shared with pyinstaller — see git history if this recurs.
 qtpy = "*"
 pyside6 = "*"
+# pywebview's own Windows backend requires pythonnet (the `clr` module) to talk
+# to .NET/WinForms — mandatory there, unused elsewhere. Same missing-marker
+# issue as pefile/pywin32-ctypes below: locking on Linux never resolves it.
+pythonnet = { version = "*", sys_platform = "== 'win32'" }
+# uvicorn (a nicegui dependency) pulls in uvloop, which doesn't support Windows.
+# uvicorn's own extras correctly mark it Linux/macOS-only, but pipenv's resolver
+# drops that marker when locking on Linux, so it gets installed (and crashes)
+# on Windows too unless pinned here directly.
+uvloop = { version = "*", sys_platform = "!= 'win32'" }
 
 [scripts]
 scrobble = "python scrobble.py"
@@ -18,6 +34,12 @@ test = "pytest"
 
 [dev-packages]
 pytest = "*"
+pyinstaller = "*"
+# PyInstaller's own Windows-only deps. They're correctly marked win32-only
+# upstream, but locking on Linux (as this Pipfile.lock is) means the resolver
+# never sees them at all, so pinning them here forces pipenv to include them.
+pefile = { version = "*", sys_platform = "== 'win32'" }
+pywin32-ctypes = { version = "*", sys_platform = "== 'win32'" }
 
 [requires]
 python_version = "3.13"

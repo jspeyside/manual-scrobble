@@ -1,6 +1,14 @@
 # manual-scrobble
 Manually Scrobble a Plex album to multi-scrobbler
 
+# Download (Windows)
+
+Grab the latest `.exe` from the [Releases page](https://github.com/jspeyside/manual-scrobble/releases) —
+no Python install required. It's unsigned, so Windows SmartScreen will show an
+"unknown publisher" warning the first time you run it; click "More info" then
+"Run anyway". It still reads `PLEX_URL`/`PLEX_TOKEN`/`MS_URL`/`MS_TOKEN` from
+the environment or a `.env` file placed next to the `.exe` — see below.
+
 # Directions
 How it works and the two things you need:
 Environment variables (can be set in the shell or in a `.env` file next to `scrobble.py`):
@@ -10,13 +18,13 @@ Environment variables (can be set in the shell or in a `.env` file next to `scro
 - MS_TOKEN
 
 
-PLEX_TOKEN - Plex token — grab your X-Plex-Token (sign into Plex web, open any item's XML via "Get Info → View XML", copy the token from the URL). The script queries /library/metadata/{key} and /library/metadata/{key}/children on your PMS. Store this as an environment variable PLEX_TOKEN
+`PLEX_TOKEN` - Plex token — grab your X-Plex-Token (sign into Plex web, open any item's XML via "Get Info → View XML", copy the token from the URL). The script queries /library/metadata/{key} and /library/metadata/{key}/children on your PMS. Store this as an environment variable PLEX_TOKEN
 
-PLEX_URL - Needs to be the actual PMS API base — often the same host if it's reverse-proxied, otherwise the direct server address.
+`PLEX_URL` - Needs to be the actual PMS API base — often the same host if it's reverse-proxied, otherwise the direct server address.
 
-MS_URL - The submit-listens endpoint of your multi-scrobbler instance, e.g. `https://your-scrobbler-host/1/submit-listens`.
+`MS_URL` - The submit-listens endpoint of your multi-scrobbler instance, e.g. `https://your-scrobbler-host/1/submit-listens`.
 
-MS_TOKEN - Multi-scrobbler token — Your multi-scrobbler must be configured to accept scrobbles from outside applications as if it were a Listenbrainz server. See https://docs.multi-scrobbler.app/configuration/sources/listenbrainz-endpoint/ for how to configure this. 
+`MS_TOKEN` - Multi-scrobbler token — Your multi-scrobbler must be configured to accept scrobbles from outside applications as if it were a Listenbrainz server. See https://docs.multi-scrobbler.app/configuration/sources/listenbrainz-endpoint/ for how to configure this. 
 
 # GUI
 
@@ -41,4 +49,22 @@ pipenv run gui --no-native  # opens in a browser tab instead
 The connection settings panel is prefilled from the same environment variables
 as the CLI (PLEX_URL, PLEX_TOKEN, MS_URL, MS_TOKEN) and can be edited in the UI
 for the session.
+
+# Building the Windows .exe locally
+
+PyInstaller builds a platform-native binary, so this only works run from an
+actual Windows Python (not this repo's Linux/WSL2 dev setup):
+
+```powershell
+pip install pipenv
+pipenv install --dev
+pipenv run pyinstaller --noconfirm manual-scrobble.spec
+```
+
+The result is `dist\manual-scrobble.exe`. Always build from
+[manual-scrobble.spec](manual-scrobble.spec) — not a hand-typed `pyinstaller`/
+`nicegui-pack` command — since it's what keeps `PySide6`/`qtpy` (installed for
+the Linux dev fallback, see the comment in [Pipfile](Pipfile)) out of the
+Windows build. Skipping it silently produces a ~250MB exe with all of Qt
+bundled instead of the normal ~70MB.
 

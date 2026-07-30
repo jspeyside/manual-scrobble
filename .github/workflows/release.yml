@@ -1,0 +1,48 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows-exe:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - run: pip install pipenv
+
+      - run: pipenv install --dev --deploy
+
+      - name: Build the exe
+        run: pipenv run pyinstaller --noconfirm manual-scrobble.spec
+
+      - name: Rename with version
+        run: Rename-Item "dist/manual-scrobble.exe" "manual-scrobble-${{ github.ref_name }}-windows.exe"
+
+      - name: Smoke test the built exe
+        run: |
+          $exe = Get-ChildItem dist -Filter "manual-scrobble-*.exe" | Select-Object -First 1
+          $proc = Start-Process -FilePath $exe.FullName -PassThru `
+            -RedirectStandardOutput "$env:RUNNER_TEMP\smoke_stdout.log" `
+            -RedirectStandardError "$env:RUNNER_TEMP\smoke_stderr.log"
+          Start-Sleep -Seconds 8
+          if ($proc.HasExited) {
+            Write-Host "::error::exe exited early with code $($proc.ExitCode)"
+            Get-Content "$env:RUNNER_TEMP\smoke_stderr.log" -ErrorAction SilentlyContinue
+            exit 1
+          }
+          Stop-Process -Id $proc.Id -Force
+          Write-Host "exe launched and stayed alive for 8s - OK"
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/manual-scrobble-*.exe

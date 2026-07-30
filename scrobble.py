@@ -25,12 +25,20 @@ import os
 import sys
 import time
 from datetime import datetime
+from pathlib import Path
 from urllib.parse import unquote, urlparse, parse_qs
 
 import requests
 from dotenv import load_dotenv
 
-load_dotenv()
+# python-dotenv's default load_dotenv() looks for .env by walking up from the
+# current working directory, which is unreliable for a packaged .exe — the
+# CWD at launch depends on how it was started (double-click, shortcut, etc.),
+# not where the .exe file actually lives. Resolve explicitly instead, so a
+# .env next to the .exe (or next to this script, when run from source) is
+# always found regardless of the launch CWD.
+_app_dir = Path(sys.executable).parent if getattr(sys, "frozen", False) else Path(__file__).parent
+load_dotenv(_app_dir / ".env")
 
 
 # ---------- Plex URL parsing ----------
