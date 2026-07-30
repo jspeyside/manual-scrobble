@@ -6,11 +6,18 @@ name = "pypi"
 [packages]
 requests = "*"
 python-dotenv = "*"
+nicegui = "*"
+pywebview = "*"
+qtpy = "*"
+pyside6 = "*"
 
 [scripts]
 scrobble = "python scrobble.py"
+gui = "python gui.py"
+test = "pytest"
 
 [dev-packages]
+pytest = "*"
 
 [requires]
 python_version = "3.13"

@@ -66,13 +66,17 @@ def plex_get(base: str, token: str, path: str) -> dict:
 
 def _mbid(guids, prefix):
     """Extract a MusicBrainz id of a given type from a Plex Guid list."""
+    bare = None
     for g in guids or []:
         gid = g.get("id", "")
-        if gid.startswith(f"mbid://{prefix}"):
-            return gid.split("mbid://", 1)[1].split("/", 1)[-1]
-        if gid.startswith(f"mbid://"):  # some agents store bare mbid
-            return gid.replace("mbid://", "")
-    return None
+        if not gid.startswith("mbid://"):
+            continue
+        rest = gid[len("mbid://"):]
+        if rest.startswith(f"{prefix}/"):
+            return rest[len(prefix) + 1:]
+        if "/" not in rest and bare is None:
+            bare = rest  # some agents store a bare mbid
+    return bare
 
 
 def fetch_album(base: str, token: str, rating_key: str):
